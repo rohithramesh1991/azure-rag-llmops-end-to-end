@@ -1,0 +1,30 @@
+# Python cruft
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.dist/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# VCS & OS
+.git
+.gitignore
+.DS_Store
+
+# Secrets / local configs
+.env
+*.pem
+*.crt
+*.key
+
+# Not needed in runtime image
+tests/
+k8s/
+.github/
+
+# If you build wheels with readme in pyproject, DO NOT ignore it:
+# README.md

@@ -1,0 +1,135 @@
+# =========================
+# Python bytecode & caches
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# =========================
+# Virtual environments
+# =========================
+.venv/
+venv/
+env/
+ENV/
+.conda/
+*.conda
+
+# =========================
+# Packaging / build artifacts
+# =========================
+.Python
+build/
+dist/
+downloads/
+eggs/
+.eggs/
+sdist/
+wheels/
+share/python-wheels/
+pip-wheel-metadata/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Hatch / tooling caches
+.hatch/
+.cache/
+
+# =========================
+# Test / coverage / type-check
+# =========================
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.mypy_cache/
+.ruff_cache/
+.pytype/
+.pyre/
+.dmypy.json
+dmypy.json
+coverage.xml
+pytestdebug.log
+*.cover
+*.py,cover
+
+# =========================
+# Logs
+# =========================
+*.log
+log/
+logs/
+
+# =========================
+# IDE / editor settings
+# =========================
+.vscode/
+.idea/
+*.iml
+*.code-workspace
+*.sublime-project
+*.sublime-workspace
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Icon?
+Desktop.ini
+$RECYCLE.BIN/
+*.swp
+*.swo
+*~
+
+# =========================
+# Environment / secrets
+# =========================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+*.pfx
+*.p12
+*.keystore
+
+# =========================
+# Containers / Docker (git keeps these, but ignore local extras)
+# =========================
+.docker/
+docker-compose.override.yml
+# Keep Dockerfile tracked:
+!Dockerfile
+
+# =========================
+# Kubernetes / Azure local artifacts
+# =========================
+*.kubeconfig
+*.kube
+*.yaml~
+# NOTE: We DO keep k8s manifests under version control:
+# k8s/
+
+# =========================
+# Node (if you add a tiny frontend later)
+# =========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =========================
+# Notebooks
+# =========================
+.ipynb_checkpoints/
