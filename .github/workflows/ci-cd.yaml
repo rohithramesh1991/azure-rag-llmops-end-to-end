@@ -58,7 +58,7 @@ jobs:
       - name: Install kubelogin (AAD exec plugin)
         uses: azure/use-kubelogin@v1
         with:
-          kubelogin-version: 'latest'
+          kubelogin-version: 'v0.0.33'
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Get AKS context (AAD)
