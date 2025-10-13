@@ -1,15 +1,14 @@
-name: CI-CD (prod only)
+name: CI-CD
 
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_dispatch: {}
 
 permissions:
-  id-token: write
+  id-token: write     # needed for azure/login OIDC
   contents: read
-  packages: write
+  packages: write     # needed to push to GHCR
 
 jobs:
   test:
@@ -17,7 +16,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: "3.11" }
+        with:
+          python-version: "3.11"
       - name: Install
         run: |
           python -m pip install --upgrade pip
@@ -42,54 +42,58 @@ jobs:
         run: docker push ghcr.io/${{ github.repository }}:${{ github.sha }}
 
   deploy-prod:
-  needs: build-and-push
-  runs-on: ubuntu-latest
-  environment: prod
-  steps:
-    - uses: actions/checkout@v4
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: prod   # uses Environment-scoped secrets/approvals
+    steps:
+      - uses: actions/checkout@v4
 
-    - name: Azure login (OIDC)
-      uses: azure/login@v2
-      with:
-        client-id:       ${{ secrets.AZURE_CLIENT_ID }}
-        tenant-id:       ${{ secrets.AZURE_TENANT_ID }}
-        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id:       ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id:       ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-    # Install kubelogin exec plugin
-    - name: Install kubelogin
-      uses: azure/use-kubelogin@v1
-      with:
-        kubelogin-version: 'latest'
+      - name: Install kubelogin (AAD exec plugin)
+        uses: azure/use-kubelogin@v1
+        with:
+          kubelogin-version: 'latest'
 
-    # Generate kubeconfig that uses kubelogin (AAD)
-    - name: Get AKS context
-      uses: azure/aks-set-context@v4
-      with:
-        resource-group: ${{ secrets.AKS_RESOURCE_GROUP }}
-        cluster-name:   ${{ secrets.AKS_CLUSTER_NAME }}
-        use-kubelogin:  true
+      - name: Get AKS context (AAD)
+        uses: azure/aks-set-context@v4
+        with:
+          resource-group: ${{ secrets.AKS_RESOURCE_GROUP }}
+          cluster-name:   ${{ secrets.AKS_CLUSTER_NAME }}
+          use-kubelogin:  true
 
-    - name: Install kustomize
-      run: |
-        curl -sL https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh | bash
-        sudo mv kustomize /usr/local/bin/
+      - name: Install kustomize
+        run: |
+          curl -sL https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh | bash
+          sudo mv kustomize /usr/local/bin/
 
-    - name: Create/Update namespace & app secret
-      run: |
-        kubectl create ns rag-prod --dry-run=client -o yaml | kubectl apply -f -
-        kubectl create secret generic app-config \
-          --from-literal=OPENAI_API_BASE='${{ secrets.OPENAI_API_BASE }}' \
-          --from-literal=OPENAI_API_KEY='${{ secrets.OPENAI_API_KEY }}' \
-          --from-literal=OPENAI_API_VERSION='${{ secrets.OPENAI_API_VERSION }}' \
-          --from-literal=CHAT_DEPLOYMENT='${{ secrets.CHAT_DEPLOYMENT }}' \
-          --from-literal=EMBEDDING_DEPLOYMENT='${{ secrets.EMBEDDING_DEPLOYMENT }}' \
-          --from-literal=SEARCH_SERVICE_NAME='${{ secrets.SEARCH_SERVICE_NAME }}' \
-          --from-literal=SEARCH_API_KEY='${{ secrets.SEARCH_API_KEY }}' \
-          --from-literal=SEARCH_INDEX_NAME='${{ secrets.SEARCH_INDEX_NAME }}' \
-          -n rag-prod --dry-run=client -o yaml | kubectl apply -f -
+      - name: Create/Update namespace & app secret
+        run: |
+          kubectl create ns rag-prod --dry-run=client -o yaml | kubectl apply -f -
+          kubectl create secret generic app-config \
+            --from-literal=OPENAI_API_BASE='${{ secrets.OPENAI_API_BASE }}' \
+            --from-literal=OPENAI_API_KEY='${{ secrets.OPENAI_API_KEY }}' \
+            --from-literal=OPENAI_API_VERSION='${{ secrets.OPENAI_API_VERSION }}' \
+            --from-literal=CHAT_DEPLOYMENT='${{ secrets.CHAT_DEPLOYMENT }}' \
+            --from-literal=EMBEDDING_DEPLOYMENT='${{ secrets.EMBEDDING_DEPLOYMENT }}' \
+            --from-literal=SEARCH_SERVICE_NAME='${{ secrets.SEARCH_SERVICE_NAME }}' \
+            --from-literal=SEARCH_API_KEY='${{ secrets.SEARCH_API_KEY }}' \
+            --from-literal=SEARCH_INDEX_NAME='${{ secrets.SEARCH_INDEX_NAME }}' \
+            -n rag-prod --dry-run=client -o yaml | kubectl apply -f -
 
-    - name: Set image tag & deploy overlay
-      working-directory: k8s/overlays/prod
-      run: |
-        kustomize edit set image ghcr.io/${{ github.repository }}=ghcr.io/${{ github.repository }}:${{ github.sha }}
-        kubectl apply -k .
+      - name: Set image tag & deploy overlay
+        working-directory: k8s/overlays/prod
+        run: |
+          kustomize edit set image ghcr.io/${{ github.repository }}=ghcr.io/${{ github.repository }}:${{ github.sha }}
+          kubectl apply -k .
+
+      # Optional: quick rollout & endpoints check
+      - name: Wait for rollout
+        run: |
+          kubectl -n rag-prod rollout status deploy/rag-api --timeout=120s || true
+          kubectl -n rag-prod get svc,ingress -o wide
