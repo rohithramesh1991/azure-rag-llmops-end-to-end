@@ -10,12 +10,11 @@ spec:
     - Ingress
   ingress:
     - from:
-        # Allow from nginx ingress controller namespace
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: ingress-nginx
-        # Allow from same namespace (optional: for sidecars/metrics)
-        - podSelector: {}
+              kubernetes.io/metadata.name: ingress-basic  # or “ingress-nginx”, depending on where your ingress is installed
       ports:
         - protocol: TCP
-          port: 80
+          port:
+            name: http
+            # or number: 8000

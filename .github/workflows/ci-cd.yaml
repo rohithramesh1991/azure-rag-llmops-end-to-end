@@ -1,4 +1,4 @@
-name: CI-CD
+name: CI-CD (prod only)
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 permissions:
-  id-token: write       # <-- needed for azure/login (OIDC)
+  id-token: write
   contents: read
   packages: write
 
@@ -17,13 +17,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: '3.11' }
+        with: { python-version: "3.11" }
       - name: Install
         run: |
           python -m pip install --upgrade pip
-          pip install .[dev]
+          pip install -e .[dev]
       - name: Run tests
-        run: pytest
+        run: pytest --cov=webapp --cov-report=term-missing -q
 
   build-and-push:
     needs: test
@@ -41,13 +41,10 @@ jobs:
       - name: Push image
         run: docker push ghcr.io/${{ github.repository }}:${{ github.sha }}
 
-  deploy:
+  deploy-prod:
     needs: build-and-push
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        env: [dev, prod]
-    environment: ${{ matrix.env }}  # approvals, env-scoped secrets
+    environment: prod   # uses Environment "prod" and its secrets (if any)
     steps:
       - uses: actions/checkout@v4
 
@@ -58,41 +55,33 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Get AKS context
+      - name: Get AKS context (prod)
         uses: azure/aks-set-context@v4
         with:
-          resource-group: ${{ secrets.AKS_RESOURCE_GROUP }}   # env-scoped secret
-          cluster-name:  ${{ secrets.AKS_CLUSTER_NAME }}      # env-scoped secret
-
-      - name: Setup kubectl
-        uses: azure/setup-kubectl@v4
+          resource-group: ${{ secrets.AKS_RESOURCE_GROUP }}
+          cluster-name:   ${{ secrets.AKS_CLUSTER_NAME }}
 
       - name: Install kustomize
         run: |
           curl -sL https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh | bash
           sudo mv kustomize /usr/local/bin/
 
-      - name: Create namespace & app secret
+      - name: Create/Update namespace & app secret (prod)
         run: |
-          kubectl create namespace rag-${{ matrix.env }} --dry-run=client -o yaml | kubectl apply -f -
-
-          # Create/Update the app-config secret (matches your Deployment envFrom)
+          kubectl create ns rag-prod --dry-run=client -o yaml | kubectl apply -f -
           kubectl create secret generic app-config \
-            --from-literal=OPENAI_API_TYPE='azure' \
             --from-literal=OPENAI_API_BASE='${{ secrets.OPENAI_API_BASE }}' \
             --from-literal=OPENAI_API_KEY='${{ secrets.OPENAI_API_KEY }}' \
             --from-literal=OPENAI_API_VERSION='${{ secrets.OPENAI_API_VERSION }}' \
+            --from-literal=CHAT_DEPLOYMENT='${{ secrets.CHAT_DEPLOYMENT }}' \
+            --from-literal=EMBEDDING_DEPLOYMENT='${{ secrets.EMBEDDING_DEPLOYMENT }}' \
             --from-literal=SEARCH_SERVICE_NAME='${{ secrets.SEARCH_SERVICE_NAME }}' \
             --from-literal=SEARCH_API_KEY='${{ secrets.SEARCH_API_KEY }}' \
             --from-literal=SEARCH_INDEX_NAME='${{ secrets.SEARCH_INDEX_NAME }}' \
-            --from-literal=EMBEDDING_DEPLOYMENT='${{ secrets.EMBEDDING_DEPLOYMENT }}' \
-            --from-literal=CHAT_DEPLOYMENT='${{ secrets.CHAT_DEPLOYMENT }}' \
-            -n rag-${{ matrix.env }} \
-            --dry-run=client -o yaml | kubectl apply -f -
+            -n rag-prod --dry-run=client -o yaml | kubectl apply -f -
 
-      - name: Set image tag in overlay and deploy
-        working-directory: k8s/overlays/${{ matrix.env }}
+      - name: Set image tag & deploy prod overlay
+        working-directory: k8s/overlays/prod
         run: |
-          # Ensure your kustomization.yaml has an 'images:' entry whose 'name' matches this left-hand value
           kustomize edit set image ghcr.io/${{ github.repository }}=ghcr.io/${{ github.repository }}:${{ github.sha }}
           kubectl apply -k .

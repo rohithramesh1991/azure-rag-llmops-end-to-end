@@ -11,36 +11,34 @@ spec:
     metadata:
       labels:
         app: rag-api
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "80"
-        prometheus.io/path: "/metrics"
     spec:
       containers:
         - name: rag-api
-          image: ghcr.io/OWNER/REPO:{{GIT_SHA}}
+          # Image is set by kustomize in overlays via GH Actions
+          image: ghcr.io/OWNER/REPO:latest
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 8000
+            - name: http
+              containerPort: 8000
           envFrom:
             - secretRef:
-                name: rag-env
-          resources:
-            requests:
-              cpu: "500m"
-              memory: "1Gi"
-            limits:
-              cpu: "2"
-              memory: "4Gi"
-          livenessProbe:
-            httpGet:
-              path: /healthz
-              port: 8000
-            initialDelaySeconds: 10
-            periodSeconds: 10
+                name: app-config
           readinessProbe:
             httpGet:
               path: /readyz
               port: 8000
             initialDelaySeconds: 5
             periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"

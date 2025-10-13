@@ -2,11 +2,18 @@ apiVersion: v1
 kind: Service
 metadata:
   name: rag-api
-  namespace: rag-prod
+  labels:
+    app: rag-api
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "80"
+    prometheus.io/path: "/metrics"
 spec:
-  type: ClusterIP
   selector:
     app: rag-api
   ports:
-    - port: 80
+    - name: http
+      port: 80
       targetPort: 8000
+
+
