@@ -10,6 +10,7 @@ WORKDIR /src
 # Copy metadata + source to build the wheel
 COPY pyproject.toml ./
 COPY webapp ./webapp
+COPY README.md ./ 
 
 # Build wheel into /src/dist/*.whl
 RUN python -m pip install --upgrade pip build && \
