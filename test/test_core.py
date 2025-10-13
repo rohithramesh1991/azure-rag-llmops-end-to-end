@@ -1,32 +1,40 @@
-# test/test_core.py
 from types import SimpleNamespace
-from webapp import main
+from webapp.services import rag
 
 def test_retrieve_context_returns_first_result(monkeypatch):
     class StubDoc:
-        def __init__(self, text: str) -> None:
+        def __init__(self, text: str):
             self.page_content = text
 
     class StubVS:
         def similarity_search_with_relevance_scores(self, query: str, k: int = 5):
-            # return [(Document, score), ...]
             return [(StubDoc("hello world"), 0.9)]
 
-    # Replace the global vector store with our stub
-    monkeypatch.setattr(main, "_vs", StubVS())
+    # IMPORTANT: patch the symbol used inside rag.py
+    monkeypatch.setattr(rag, "get_vectorstore", lambda: StubVS())
 
-    assert main.retrieve_context("x") == "hello world"
+    result = rag.retrieve("some query")
+    assert result == "hello world"
 
 
 def test_llm_answer_extracts_message(monkeypatch):
-    # Patch the OpenAI chat call to avoid hitting the network
     def fake_create(**kwargs):
-        # shape compatible with main.coerce_content_to_text()
         return SimpleNamespace(
             choices=[SimpleNamespace(message=SimpleNamespace(content="ok"))]
         )
 
-    # Patch the bound method on the already-created client
-    monkeypatch.setattr(main._oai.chat.completions, "create", fake_create)
+    class StubCompletions:
+        def create(self, **kwargs):
+            return fake_create(**kwargs)
 
-    assert main.llm_answer("q", "c") == "ok"
+    class StubChat:
+        completions = StubCompletions()
+
+    class StubOAI:
+        chat = StubChat()
+
+    # IMPORTANT: patch the symbol used inside rag.py
+    monkeypatch.setattr(rag, "get_oai_client", lambda: StubOAI())
+
+    result = rag.answer("question", "context")
+    assert result == "ok"
