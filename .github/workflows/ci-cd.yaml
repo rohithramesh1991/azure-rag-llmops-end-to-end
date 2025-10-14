@@ -61,12 +61,13 @@ jobs:
           kubelogin-version: 'v0.0.33'
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Get AKS context (admin, temporary)
+      - name: Get AKS context (admin)
         uses: azure/aks-set-context@v4
         with:
           resource-group: ${{ secrets.AKS_RESOURCE_GROUP }}
           cluster-name:   ${{ secrets.AKS_CLUSTER_NAME }}
           use-kubelogin:  true
+          admin:          true
 
       - name: Sanity check K8s auth & cluster
         run: |
