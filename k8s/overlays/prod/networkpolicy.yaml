@@ -16,5 +16,5 @@ spec:
       ports:
         - protocol: TCP
           port:
-            name: http
+            name: "http"
             # or number: 8000
