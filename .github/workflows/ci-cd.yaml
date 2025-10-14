@@ -89,10 +89,18 @@ jobs:
           kubectl get ns -o wide || true
 
 
-      - name: Install kustomize
+      - name: Install kustomize (pinned, authenticated)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          curl -sL https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh | bash
-          sudo mv kustomize /usr/local/bin/
+          set -euo pipefail
+          VER="5.4.2"
+          curl -fsSL -H "Authorization: Bearer $GITHUB_TOKEN" \
+            "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${VER}/kustomize_v${VER}_linux_amd64.tar.gz" \
+            -o /tmp/kustomize.tgz
+          tar -xzf /tmp/kustomize.tgz -C /tmp
+          sudo mv /tmp/kustomize /usr/local/bin/kustomize
+          kustomize version
 
       - name: Create/Update namespace & app secret
         run: |
