@@ -2,8 +2,8 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: rag-api
-  annotations:
-    kubernetes.io/ingress.class: nginx
+spec:
+  ingressClassName: nginx
 spec:
   tls:
     - hosts:
