@@ -111,7 +111,7 @@ jobs:
       - name: Set image tag & deploy overlay
         working-directory: k8s/overlays/prod
         run: |
-          kustomize edit set image ghcr.io/${{ github.repository }}=ghcr.io/${{ github.repository }}:${{ github.sha }}
+          kustomize edit set image ghcr.io/OWNER/REPO=ghcr.io/${{ github.repository }}:${{ github.sha }}
           kubectl apply -k .
 
       # Optional: quick rollout & endpoints check

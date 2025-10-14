@@ -1,14 +1,12 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-namespace: rag-dev
 nameSuffix: -dev
 
 resources:
   - ../../base
   - ingress.yaml
 
-# We'll set the image/tag from CI with `kustomize edit set image`
 images:
   - name: ghcr.io/OWNER/REPO
     newName: ghcr.io/OWNER/REPO
@@ -16,4 +14,3 @@ images:
 
 patches:
   - path: patch-deployment.yaml
-  - path: ingress.yaml

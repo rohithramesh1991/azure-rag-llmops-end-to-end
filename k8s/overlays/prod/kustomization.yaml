@@ -16,4 +16,3 @@ images:
 
 patches:
   - path: patch-deployment.yaml
-  - path: ingress.yaml
