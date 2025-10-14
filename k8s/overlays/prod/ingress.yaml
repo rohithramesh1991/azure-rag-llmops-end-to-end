@@ -4,11 +4,10 @@ metadata:
   name: rag-api
 spec:
   ingressClassName: nginx
-spec:
   tls:
     - hosts:
-        - "rag-demo.eastus2.cloudapp.azure.com"
-      # secretName: tls-cert   # if you have TLS; else remove tls block
+        - rag-demo.eastus2.cloudapp.azure.com
+      # secretName: tls-cert   # <-- add if you have a TLS secret; otherwise remove the entire tls: section
   rules:
     - host: rag-demo.eastus2.cloudapp.azure.com
       http:
@@ -20,4 +19,3 @@ spec:
                 name: rag-api
                 port:
                   number: 80
-
