@@ -6,8 +6,8 @@ metadata:
     app: rag-api
   annotations:
     prometheus.io/scrape: "true"
-    prometheus.io/port: "80"
-    prometheus.io/path: "/metrics"
+    prometheus.io/port: "80"        # service port; forwards to containerPort 8000
+    prometheus.io/path: "/metrics"  # adjust if your app exposes a different path
 spec:
   selector:
     app: rag-api
@@ -15,5 +15,4 @@ spec:
     - name: http
       port: 80
       targetPort: 8000
-
-
+  type: ClusterIP

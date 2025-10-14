@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: rag-api-allow-appgw
+  name: rag-api-allow-appgw-and-metrics
   namespace: rag-prod
 spec:
   podSelector:
@@ -10,9 +10,18 @@ spec:
   policyTypes:
     - Ingress
   ingress:
+    # Allow App Gateway subnet (replace with your CIDR)
     - from:
         - ipBlock:
-            cidr: 10.226.0.0/24  # <-- REPLACE with the addressPrefix of appgw-subnet
+            cidr: 10.226.0.0/24    # <-- your appgw-subnet CIDR
       ports:
         - protocol: TCP
-          port: 80            # Service port (maps to containerPort 8000)
+          port: 80
+    # Allow Prometheus from the monitoring namespace (adjust if different)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - protocol: TCP
+          port: 80
