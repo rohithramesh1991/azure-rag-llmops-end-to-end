@@ -61,7 +61,7 @@ jobs:
           kubelogin-version: 'v0.0.33'
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Get AKS context (AAD)
+      - name: Get AKS context (admin, temporary)
         uses: azure/aks-set-context@v4
         with:
           resource-group: ${{ secrets.AKS_RESOURCE_GROUP }}
@@ -71,13 +71,22 @@ jobs:
       - name: Sanity check K8s auth & cluster
         run: |
           az account set --subscription "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
-          az aks show -g "${{ secrets.AKS_RESOURCE_GROUP }}" -n "${{ secrets.AKS_CLUSTER_NAME }}" \
+          az aks show \
+            -g "${{ secrets.AKS_RESOURCE_GROUP }}" \
+            -n "${{ secrets.AKS_CLUSTER_NAME }}" \
             --query "{azureRBAC:securityProfile.azureRBAC.enabled, oidc:oidcIssuerProfile.enabled}" -o table || true
-          kubectl version --short
+
+          kubectl version --client=true || kubectl version --client -o json || true
+
           echo "can-i create namespaces?"
-          kubectl auth can-i create namespaces
+          kubectl auth can-i create namespaces || true
+
+          echo "can-i create secret in rag-prod?"
+          kubectl auth can-i create secret -n rag-prod || true
+
           echo "existing namespaces:"
-          kubectl get ns
+          kubectl get ns -o wide || true
+
 
       - name: Install kustomize
         run: |
