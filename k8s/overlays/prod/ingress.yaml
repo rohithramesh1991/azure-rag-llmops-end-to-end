@@ -15,10 +15,10 @@ spec:
   # When you *do* have a cert uploaded to App Gateway, you can add:
   # tls:
   #   - hosts:
-  #       - rag-demo.eastus2.cloudapp.azure.com
+  #       - rag-demo-dns.eastus2.cloudapp.azure.com
 
   rules:
-    - host: rag-demo.eastus2.cloudapp.azure.com   # see DNS steps below
+    - host: rag-demo-dns.eastus2.cloudapp.azure.com   # see DNS steps below
       http:
         paths:
           - path: /
