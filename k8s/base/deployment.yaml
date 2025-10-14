@@ -1,3 +1,51 @@
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: rag-api
+#   labels:
+#     app: rag-api
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: rag-api
+#   template:
+#     metadata:
+#       labels:
+#         app: rag-api
+#     spec:
+#       containers:
+#         - name: rag-api
+#           image: ghcr.io/OWNER/REPO:latest  # kustomize will override
+#           imagePullPolicy: IfNotPresent
+#           ports:
+#             - containerPort: 8000
+#           readinessProbe:
+#             httpGet:
+#               path: /docs    # returns 200 if FastAPI is up
+#               port: 8000
+#               scheme: HTTP
+#             initialDelaySeconds: 5
+#             periodSeconds: 10
+#             timeoutSeconds: 3
+#             failureThreshold: 6
+#           livenessProbe:
+#             httpGet:
+#               path: /docs
+#               port: 8000
+#               scheme: HTTP
+#             initialDelaySeconds: 20
+#             periodSeconds: 20
+#             timeoutSeconds: 3
+#             failureThreshold: 5
+#           resources:
+#             requests:
+#               cpu: 100m
+#               memory: 256Mi
+#             limits:
+#               cpu: 500m
+#               memory: 512Mi
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -5,7 +53,7 @@ metadata:
   labels:
     app: rag-api
 spec:
-  replicas: 1
+  replicas: 1                     # keep a single replica for now
   selector:
     matchLabels:
       app: rag-api
@@ -16,35 +64,15 @@ spec:
     spec:
       containers:
         - name: rag-api
-          image: ghcr.io/OWNER/REPO:latest  # kustomize will override
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/OWNER/REPO:latest
           ports:
             - containerPort: 8000
-          # If your image needs explicit host/port, uncomment and adjust:
-          # command: ["uvicorn"]
-          # args: ["webapp.main:app", "--host", "0.0.0.0", "--port", "8000"]
-          readinessProbe:
-            httpGet:
-              path: /docs    # returns 200 if FastAPI is up
-              port: 8000
-              scheme: HTTP
-            initialDelaySeconds: 5
-            periodSeconds: 10
-            timeoutSeconds: 3
-            failureThreshold: 6
-          livenessProbe:
-            httpGet:
-              path: /docs
-              port: 8000
-              scheme: HTTP
-            initialDelaySeconds: 20
-            periodSeconds: 20
-            timeoutSeconds: 3
-            failureThreshold: 5
+          # Probes: keep your existing; 502 wasn’t a probe issue—it was no capacity
           resources:
             requests:
-              cpu: 50m
-              memory: 128Mi
+              cpu: 100m           # ↓ from 500m
+              memory: 256Mi       # ↓ from 1Gi
             limits:
-              cpu: 500m
-              memory: 512Mi
+              cpu: 500m           # ↓ from 2
+              memory: 512Mi       # ↓ from 4Gi
+
