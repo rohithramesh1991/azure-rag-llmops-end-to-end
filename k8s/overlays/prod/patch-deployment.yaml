@@ -3,15 +3,15 @@ kind: Deployment
 metadata:
   name: rag-api
 spec:
-  replicas: 3
+  replicas: 1
   template:
     spec:
       containers:
         - name: rag-api
           resources:
             requests:
-              cpu: "500m"
-              memory: "1Gi"
+              cpu: "100m"
+              memory: "256Mi"
             limits:
-              cpu: "2"
-              memory: "4Gi"
+              cpu: "500m"
+              memory: "512Mi"

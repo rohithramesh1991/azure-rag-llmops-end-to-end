@@ -16,3 +16,4 @@ images:
 
 patches:
   - path: patch-deployment.yaml
+  - path: patch-hpa.yaml         # <— add this
