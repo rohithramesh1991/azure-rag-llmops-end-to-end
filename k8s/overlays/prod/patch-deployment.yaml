@@ -6,6 +6,8 @@ spec:
   replicas: 1
   template:
     spec:
+      nodeSelector:
+        kubernetes.azure.com/mode: user   # schedule on the User pool
       containers:
         - name: rag-api
           resources:
