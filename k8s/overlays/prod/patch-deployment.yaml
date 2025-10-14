@@ -7,9 +7,15 @@ spec:
   template:
     spec:
       nodeSelector:
-        kubernetes.azure.com/mode: user   # schedule on the User pool
+        kubernetes.azure.com/mode: user
       containers:
         - name: rag-api
+          image: ghcr.io/OWNER/REPO:latest   # CI overrides
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - secretRef:
+                name: app-config 
           resources:
             requests:
               cpu: "100m"
