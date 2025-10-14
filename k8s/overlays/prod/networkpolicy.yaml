@@ -1,7 +1,8 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: rag-api-allow-from-ingress
+  name: rag-api-allow-appgw
+  namespace: rag-prod
 spec:
   podSelector:
     matchLabels:
@@ -10,9 +11,8 @@ spec:
     - Ingress
   ingress:
     - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: ingress-basic  # or “ingress-nginx”, depending on where your ingress is installed
+        - ipBlock:
+            cidr: 10.226.0.0/24  # <-- REPLACE with the addressPrefix of appgw-subnet
       ports:
         - protocol: TCP
-          port: 8000
+          port: 80            # Service port (maps to containerPort 8000)
