@@ -2,14 +2,23 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: rag-api
+  annotations:
+    # (Optional) set a custom health probe path for App Gateway
+    appgw.ingress.kubernetes.io/health-probe-path: /healthz
+    # (Optional) if your service listens on HTTP (not HTTPS) internally
+    appgw.ingress.kubernetes.io/backend-protocol: "http"
 spec:
-  ingressClassName: nginx
-  tls:
-    - hosts:
-        - rag-demo.eastus2.cloudapp.azure.com
-      # secretName: tls-cert   # <-- add if you have a TLS secret; otherwise remove the entire tls: section
+  # AGIC ingress class; do NOT use "nginx" here
+  ingressClassName: azure-application-gateway
+
+  # If you don't have a cert on App Gateway yet, omit TLS entirely.
+  # When you *do* have a cert uploaded to App Gateway, you can add:
+  # tls:
+  #   - hosts:
+  #       - rag-demo.eastus2.cloudapp.azure.com
+
   rules:
-    - host: rag-demo.eastus2.cloudapp.azure.com
+    - host: rag-demo.eastus2.cloudapp.azure.com   # see DNS steps below
       http:
         paths:
           - path: /
