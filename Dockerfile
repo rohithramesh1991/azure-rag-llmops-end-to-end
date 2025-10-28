@@ -7,12 +7,10 @@ FROM python:3.11-slim AS builder
 ENV PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1
 WORKDIR /src
 
-# Copy metadata + source for building
 COPY pyproject.toml ./
 COPY README.md ./
 COPY webapp ./webapp
 
-# Build wheel only (skip sdist)
 RUN python -m pip install --upgrade pip build && \
     python -m build --wheel
 
@@ -29,14 +27,23 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Optional: for HEALTHCHECK
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
-# Install the wheel without renaming
 COPY --from=builder /src/dist/*.whl /tmp/dist/
 RUN python -m pip install --no-cache-dir /tmp/dist/*.whl && rm -rf /tmp/dist
+
+# ---------- BUILD-TIME ASSERTION (NEW) ----------
+RUN python - <<'PY'
+import inspect, sys
+import webapp.services.rag as r
+p = inspect.getsourcefile(r)
+src = open(p, 'r', encoding='utf-8').read()
+assert 'LLMCallTimer' in src, f"LLM instrumentation missing in {p}"
+print("OK: LLM instrumentation present in", p)
+PY
+# -----------------------------------------------
 
 # Non-root user
 RUN useradd -m -u 10001 appuser
