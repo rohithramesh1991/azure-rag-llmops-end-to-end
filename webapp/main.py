@@ -45,7 +45,7 @@ def root():
 # -----------------------------------------------------------------------------
 # Prometheus /metrics endpoint
 # -----------------------------------------------------------------------------
-Instrumentator().instrument(app).expose(app)
+Instrumentator().instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
 
 # -----------------------------------------------------------------------------
 # Entry point for Uvicorn / Gunicorn

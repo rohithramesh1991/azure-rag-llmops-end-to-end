@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from typing import List
@@ -8,6 +7,9 @@ from openai.types.chat import ChatCompletionMessageParam
 
 from webapp.config import settings
 from webapp.clients import get_oai_client, get_vectorstore
+
+# NEW: Prometheus metrics
+from webapp.metrics import LLMCallTimer
 
 class RateLimited(Exception): ...
 class TimedOut(Exception): ...
@@ -62,22 +64,49 @@ def _coerce_content(resp) -> str:
         return "".join(parts)
     return ""
 
+def _usage(resp) -> tuple[int, int]:
+    """Return (prompt_tokens, completion_tokens) from OpenAI/Azure response."""
+    usage = getattr(resp, "usage", None) or {}
+    try:
+        # Azure/OpenAI python client v1 style
+        pt = int(getattr(usage, "prompt_tokens", 0) or usage.get("prompt_tokens", 0) or 0)
+        ct = int(getattr(usage, "completion_tokens", 0) or usage.get("completion_tokens", 0) or 0)
+    except Exception:
+        pt, ct = 0, 0
+    return pt, ct
+
 @_retry_llm
 def answer(query: str, context: str) -> str:
     oai = get_oai_client()
-    try:
-        resp = oai.chat.completions.create(
-            model=settings.CHAT_DEPLOYMENT,
-            messages=_prompt(query, context),
-            temperature=0.2,
-            max_tokens=800,
-            timeout=settings.LLM_TIMEOUT,
-        )
-    except RateLimitError as e:
-        raise RateLimited() from e
-    except APITimeoutError as e:
-        raise TimedOut() from e
-    except APIError as e:
-        raise UpstreamError(str(e)) from e
 
-    return _coerce_content(resp)
+    # NEW: wrap the call to collect metrics
+    provider = "azure_openai"
+    model = settings.CHAT_DEPLOYMENT
+    with LLMCallTimer(provider=provider, model=model) as t:
+        try:
+            resp = oai.chat.completions.create(
+                model=model,
+                messages=_prompt(query, context),
+                temperature=0.2,
+                max_tokens=800,
+                timeout=settings.LLM_TIMEOUT,
+            )
+            text = _coerce_content(resp)
+            pt, ct = _usage(resp)
+
+            # Optional: record $ if you wish (leave 0.0 if you don't estimate)
+            t.record_success(prompt_tokens=pt, completion_tokens=ct, cost_usd=0.0)
+            return text
+
+        except RateLimitError as e:
+            t.record_error("RateLimitError")
+            raise RateLimited() from e
+        except APITimeoutError as e:
+            t.record_error("APITimeoutError")
+            raise TimedOut() from e
+        except APIError as e:
+            t.record_error("APIError")
+            raise UpstreamError(str(e)) from e
+        except Exception as e:
+            t.record_error(e.__class__.__name__)
+            raise
