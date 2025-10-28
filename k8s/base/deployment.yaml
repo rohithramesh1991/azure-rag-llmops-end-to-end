@@ -50,10 +50,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: rag-api
-  labels:
-    app: rag-api
 spec:
-  replicas: 1                     # keep a single replica for now
+  replicas: 1
   selector:
     matchLabels:
       app: rag-api
@@ -65,14 +63,16 @@ spec:
       containers:
         - name: rag-api
           image: ghcr.io/OWNER/REPO:latest
+          imagePullPolicy: Always     # <-- add this
           ports:
             - containerPort: 8000
-          # Probes: keep your existing; 502 wasn’t a probe issue—it was no capacity
           resources:
             requests:
-              cpu: 100m           # ↓ from 500m
-              memory: 256Mi       # ↓ from 1Gi
+              cpu: 100m
+              memory: 256Mi
             limits:
-              cpu: 500m           # ↓ from 2
-              memory: 512Mi       # ↓ from 4Gi
+              cpu: 500m
+              memory: 512Mi
+          # envFrom / probes as you already have
+
 
