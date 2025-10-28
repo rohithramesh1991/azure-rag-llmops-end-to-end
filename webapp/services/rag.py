@@ -65,10 +65,8 @@ def _coerce_content(resp) -> str:
     return ""
 
 def _usage(resp) -> tuple[int, int]:
-    """Return (prompt_tokens, completion_tokens) from OpenAI/Azure response."""
     usage = getattr(resp, "usage", None) or {}
     try:
-        # Azure/OpenAI python client v1 style
         pt = int(getattr(usage, "prompt_tokens", 0) or usage.get("prompt_tokens", 0) or 0)
         ct = int(getattr(usage, "completion_tokens", 0) or usage.get("completion_tokens", 0) or 0)
     except Exception:
@@ -79,7 +77,7 @@ def _usage(resp) -> tuple[int, int]:
 def answer(query: str, context: str) -> str:
     oai = get_oai_client()
 
-    # NEW: wrap the call to collect metrics
+    # Emit LLM metrics around the call
     provider = "azure_openai"
     model = settings.CHAT_DEPLOYMENT
     with LLMCallTimer(provider=provider, model=model) as t:
@@ -93,20 +91,14 @@ def answer(query: str, context: str) -> str:
             )
             text = _coerce_content(resp)
             pt, ct = _usage(resp)
-
-            # Optional: record $ if you wish (leave 0.0 if you don't estimate)
             t.record_success(prompt_tokens=pt, completion_tokens=ct, cost_usd=0.0)
             return text
 
         except RateLimitError as e:
-            t.record_error("RateLimitError")
-            raise RateLimited() from e
+            t.record_error("RateLimitError"); raise RateLimited() from e
         except APITimeoutError as e:
-            t.record_error("APITimeoutError")
-            raise TimedOut() from e
+            t.record_error("APITimeoutError"); raise TimedOut() from e
         except APIError as e:
-            t.record_error("APIError")
-            raise UpstreamError(str(e)) from e
+            t.record_error("APIError"); raise UpstreamError(str(e)) from e
         except Exception as e:
-            t.record_error(e.__class__.__name__)
-            raise
+            t.record_error(e.__class__.__name__); raise
