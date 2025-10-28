@@ -54,4 +54,4 @@ ignore_missing_imports = true
 packages = ["webapp"]
 
 [tool.hatch.build.targets.sdist]
-include = ["webapp", "README.md", "pyproject.toml", "k8s", ".github", "Dockerfile", ".env.example"]
+include = ["webapp*", "README.md", "pyproject.toml", "k8s", ".github", "Dockerfile", ".env.example"]
