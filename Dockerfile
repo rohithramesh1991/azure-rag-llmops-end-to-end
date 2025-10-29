@@ -12,8 +12,8 @@ COPY pyproject.toml ./
 COPY README.md ./
 COPY webapp ./webapp
 
-# --- NEW: install hatchling and build ---
-RUN python -m pip install --upgrade pip build hatchling && \
+# Build wheel only (skip sdist)
+RUN python -m pip install --upgrade pip build && \
     python -m build --wheel
 
 ############################
@@ -29,24 +29,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# Optional: for HEALTHCHECK
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
-# Install the wheel
+# Install the wheel without renaming
 COPY --from=builder /src/dist/*.whl /tmp/dist/
 RUN python -m pip install --no-cache-dir /tmp/dist/*.whl && rm -rf /tmp/dist
-
-# --- OPTIONAL: verify your LLM instrumentation is present ---
-RUN python - <<'PY'
-import inspect
-import webapp.services.rag as r
-p = inspect.getsourcefile(r)
-src = open(p, encoding="utf-8").read()
-print("RAG FILE:", p)
-print("HAS LLMCallTimer:", "LLMCallTimer" in src)
-PY
-# (this prints a message during build; it won’t fail the build)
 
 # Non-root user
 RUN useradd -m -u 10001 appuser
@@ -58,4 +48,3 @@ HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
   CMD curl -fsS http://127.0.0.1:8000/healthz || exit 1
 
 CMD ["uvicorn","webapp.main:app","--host","0.0.0.0","--port","8000","--proxy-headers"]
-
