@@ -1,6 +1,8 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from prometheus_fastapi_instrumentator import Instrumentator
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from fastapi.responses import Response
 import uuid
 import logging
 
@@ -45,7 +47,12 @@ def root():
 # -----------------------------------------------------------------------------
 # Prometheus /metrics endpoint
 # -----------------------------------------------------------------------------
-Instrumentator().instrument(app).expose(app)
+Instrumentator().instrument(app)
+
+# expose /metrics via a normal FastAPI route so it appears in Swagger
+@app.get("/metrics", include_in_schema=True, tags=["Observability"])
+def metrics():
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 # -----------------------------------------------------------------------------
 # Entry point for Uvicorn / Gunicorn
