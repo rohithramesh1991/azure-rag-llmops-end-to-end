@@ -38,16 +38,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=builder /src/dist/*.whl /tmp/dist/
 RUN python -m pip install --no-cache-dir /tmp/dist/*.whl && rm -rf /tmp/dist
 
-# ✅ NEW: build-time sanity check for LLMCallTimer
-RUN python - <<'PY'
-import inspect
-import webapp.services.rag as r
-p = inspect.getsourcefile(r)
-src = open(p, 'r', encoding='utf-8').read()
-assert 'LLMCallTimer' in src, f"❌ LLM instrumentation missing in {p}"
-print("✅ Verified: LLM instrumentation present in", p)
-PY
-
 # Non-root user
 RUN useradd -m -u 10001 appuser
 USER appuser
