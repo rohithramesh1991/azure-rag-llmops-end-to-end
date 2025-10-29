@@ -1,3 +1,4 @@
+# k8s/overlays/prod/ingress.yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -16,7 +17,14 @@ spec:
     - host: rag-demo-dns.eastus2.cloudapp.azure.com
       http:
         paths:
-          - path: /
+          - path: /metrics          # <— add this block
+            pathType: Prefix
+            backend:
+              service:
+                name: rag-api
+                port:
+                  number: 80
+          - path: /                 # keep your existing catch-all
             pathType: Prefix
             backend:
               service:
