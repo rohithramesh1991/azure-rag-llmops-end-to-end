@@ -9,7 +9,6 @@ spec:
       # nodeSelector:
       #   kubernetes.azure.com/mode: user
       nodeSelector: {}
-        kubernetes.io/os: linux
       containers:
         - name: rag-api
           image: ghcr.io/OWNER/REPO:latest   # CI overrides
