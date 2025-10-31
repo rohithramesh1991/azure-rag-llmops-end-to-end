@@ -32,7 +32,7 @@ Key Components:
 
 ## 📁 Project Structure
 
-azure-rag-llmops-end-to-end/
+```azure-rag-llmops-end-to-end/
 │
 ├── webapp/ # Main FastAPI application
 │ ├── main.py # Core app logic and routes
@@ -53,4 +53,5 @@ azure-rag-llmops-end-to-end/
 ├── pyproject.toml # Dependencies and build configuration
 ├── quickcheck.py # Quick local testing script
 └── README.md
+```
 
